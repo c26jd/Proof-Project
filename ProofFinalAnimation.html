@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catherine's Mental State Animation</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        // Get the canvas element and its 2D context
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size to match window size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Initialize variables
+        let chaosLevel = 0;
+        const maxChaos = 200;
+        const maxDuration = 2 * 60 * 1000; // 2 minutes in milliseconds
+        const halfDuration = maxDuration / 2;
+        const fadeDuration = 5 * 1000; // 5 seconds for fade to black (50% faster)
+        const startTime = Date.now();
+        const shapes = [];
+
+        // Main animation loop
+        function draw() {
+            const elapsedTime = Date.now() - startTime;
+
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw shapes
+            updateShapes(elapsedTime);
+            drawShapes(elapsedTime);
+
+            // Fade to black after maxDuration is reached
+            if (elapsedTime < maxDuration) {
+                chaosLevel = Math.min(maxChaos, (elapsedTime / maxDuration) * maxChaos);
+            } else {
+                const fadeProgress = Math.min(1, (elapsedTime - maxDuration) / fadeDuration);
+                ctx.fillStyle = `rgba(0, 0, 0, ${fadeProgress})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Request the next frame
+            requestAnimationFrame(draw);
+        }
+
+        // Update shapes array
+        function updateShapes(elapsedTime) {
+            if (elapsedTime < maxDuration) {
+                for (let i = 0; i < chaosLevel; i++) {
+                    if (Math.random() < 0.1) { // Adjust this probability to control shape addition rate
+                        shapes.push(createRandomShape(elapsedTime));
+                    }
+                }
+            }
+
+            // Remove shapes that are too old
+            shapes.forEach((shape, index) => {
+                if (elapsedTime - shape.creationTime > shape.lifetime) {
+                    shapes.splice(index, 1);
+                }
+            });
+        }
+
+        // Draw shapes
+        function drawShapes(elapsedTime) {
+            shapes.forEach(shape => {
+                drawShape(shape, elapsedTime);
+            });
+        }
+
+        // Create a random shape
+        function createRandomShape(elapsedTime) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const size = Math.random() * 50;
+            const color = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, ${Math.random()})`;
+
+            const initialLifetime = 2000; // 2 seconds (changed from 5000)
+            const minLifetime = 200; // 0.2 seconds
+
+            // Adjust lifetime based on elapsed time
+            let lifetime;
+            if (elapsedTime < halfDuration) {
+                lifetime = initialLifetime - (elapsedTime / halfDuration) * (initialLifetime - minLifetime);
+            } else {
+                lifetime = minLifetime + ((maxDuration - elapsedTime) / halfDuration) * (initialLifetime - minLifetime);
+            }
+
+            // Array of mathematical expressions
+            const expressions = [
+                'E=mc^2', 'a^2 + b^2 = c^2', '∫ f(x) dx', 
+                '1/n∑rij', '∑12n/k(k+1)', '|AF/FB| * |BD/DC| * |CE/EA| = 1', 
+                'Sin(OPP/HYP)', 'Cos(Adj/Hyp)', 'Tan(Opp/Adj)',
+                'lim (x → ∞) (1 + 1/x)^x', 'Σ (i = 1 to n) i = n(n + 1)/2', 'n! = n × (n − 1) × ... × 2 × 1',
+                '∑ (k = 1 to n) 1/k = ln(n) + γ', 'eiπ + 1 = 0', 'Φ = (1 + √5) / 2', 
+                'F = G * (m1 * m2) / r^2', 'P = VI', 'V = IR',
+                'a(vf − vi) = Δd', 'F = ma', 'E = hf', 
+                'F = -kx', 'w = mg', 'p = mv',
+                'V = (4/3)πr^3', 'A = πr^2', 'C = 2πr'
+            ];
+
+            // Choose a random expression
+            const expression = expressions[Math.floor(Math.random() * expressions.length)];
+
+            return { x, y, size, color, lifetime, creationTime: elapsedTime, expression };
+        }
+
+        // Draw a shape with its associated expression
+        function drawShape(shape, elapsedTime) {
+            ctx.fillStyle = shape.color;
+            ctx.strokeStyle = shape.color;
+
+            if (Math.random() < 0.5) {
+                ctx.beginPath();
+                ctx.arc(shape.x, shape.y, shape.size, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.fillRect(shape.x, shape.y, shape.size, shape.size);
+            }
+
+            // Draw math expressions
+            ctx.fillStyle = 'black';
+            ctx.font = `${shape.size / 2}px Arial`;
+
+            // Flicker the text after hitting the half duration mark or randomly
+            if (elapsedTime < halfDuration || Math.random() < 0.5) {
+                ctx.fillText(shape.expression, shape.x, shape.y);
+            }
+        }
+
+        // Start the animation loop
+        draw();
+    </script>
+</body>
+</html>
